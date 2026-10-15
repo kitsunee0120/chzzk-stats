@@ -1,0 +1,47 @@
+name: daily
+# 매일 00:25(한국) 하루 요약 · 월요일엔 주간 보고서 + 저장소 기록 정리
+on:
+  schedule:
+    - cron: '25 15 * * *'
+  workflow_dispatch:
+    inputs:
+      report:
+        description: '주간 보고서도 지금 만들기'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: data
+  cancel-in-progress: false
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: 하루 요약
+        run: python3 scripts/aggregate.py
+      - name: 주간 보고서 (월요일)
+        if: ${{ inputs.report || github.event_name == 'schedule' }}
+        env:
+          MY_CHANNEL_ID: ${{ vars.MY_CHANNEL_ID }}
+        run: |
+          if [ "${{ inputs.report }}" = "true" ] || [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then python3 scripts/report.py; fi
+      - name: 저장
+        run: |
+          git config user.name 'meiri-stats'
+          git config user.email 'meiri-stats@users.noreply.github.com'
+          git add -A daily raw reports
+          git diff --cached --quiet || git commit -q -m "하루 요약 $(TZ=Asia/Seoul date '+%Y-%m-%d')"
+          if [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then
+            # 지운 raw가 기록에 계속 쌓이지 않게 주 1회 기록을 한 커밋으로 줄인다(파일 내용은 그대로)
+            git checkout -q --orphan squashed
+            git commit -q -m "자료 정리 $(TZ=Asia/Seoul date '+%Y-%m-%d')"
+            git push -q -f origin squashed:main
+          else
+            for i in 1 2 3; do git push -q && exit 0; git pull -q --rebase || true; sleep 5; done
+            exit 1
+          fi
