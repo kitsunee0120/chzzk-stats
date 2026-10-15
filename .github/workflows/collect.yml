@@ -1,8 +1,9 @@
 name: collect
-# 10분마다 치지직 라이브 목록 수집 (GitHub 일정은 몇 분 늦게 돌 수 있음)
+# 10분마다 치지직 라이브 목록 수집
+# 정각·10분 단위는 GitHub 전체가 몰려서 일정이 자주 빠지거나 크게 늦음 → 어긋난 분(…7분)에 돌림
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '7,17,27,37,47,57 * * * *'
   workflow_dispatch:
 permissions:
   contents: write
