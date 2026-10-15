@@ -1,7 +1,7 @@
 """주간 보고서: daily/*.json.gz 7일치(월~일)를 지난주와 비교해 reports/<시작일>-주간.md 로 쓴다.
 
 사용: python report.py [끝날짜 YYYY-MM-DD]   (생략하면 어제까지 7일)
-AI 없이 숫자만으로 만든다. 해석(왜 올랐는지)은 '단서'로만 적고 단정하지 않는다.
+AI 없이 숫자만으로 만든다. 시장 전체만 다룬다(내 채널 순위는 각자 메이리가 자기 PC에서 계산). 해석(왜 올랐는지)은 '단서'로만 적고 단정하지 않는다.
 """
 import datetime as dt
 import os
@@ -11,7 +11,6 @@ from collections import Counter, defaultdict
 
 from common import ROOT, now_kst, read_gz_json, write_text
 
-MY_CHANNEL_ID = os.environ.get('MY_CHANNEL_ID', '').strip()
 DAY_KO = '월화수목금토일'
 STOP = set('방송 오늘 그리고 하는 하기 합니다 같이 ㅋㅋ ㅎㅎ 어서 오세요 많관부 the and'.split())
 
@@ -220,23 +219,6 @@ def build(end):
         L.append('**지난주보다 늘어난 키워드**: ' + (', '.join('%s(%+.1f%%p)' % (esc(w), d) for d, w in rise[:20]) or '-'))
         L.append('')
 
-    # 5. 내 채널
-    if MY_CHANNEL_ID:
-        L.append('## 5. 내 채널')
-        L.append('')
-        me = cur['ch'].get(MY_CHANNEL_ID)
-        if not me:
-            L.append('이번 주 기록에 없습니다(방송이 없었거나 시청자 1명 미만).')
-        else:
-            mc = main_cat(me)
-            peers = sorted((avg(c) for c in cur['ch'].values() if main_cat(c) == mc and hours(c) >= 5), reverse=True)
-            rank = sum(1 for a in peers if a > avg(me)) + 1
-            L.append('- 방송 %.1f시간 · 평균 %s명 · 최고 %s명 (%s)' % (hours(me), fmt(avg(me)), fmt(me['peak']), me['peakAt']))
-            L.append('- 주 분류 %s 안에서 평균 시청자 %d위 / %d채널 (5시간 이상 방송한 채널 기준)' % (esc(mc), rank, max(len(peers), rank)))
-            pm = prev['ch'].get(MY_CHANNEL_ID) if prev else None
-            if pm:
-                L.append('- 지난주: 방송 %.1f시간 · 평균 %s명' % (hours(pm), fmt(avg(pm))))
-            L.append('')
     name = '%s-주간.md' % start.strftime('%Y-%m-%d')
     return name, '\n'.join(L) + '\n'
 

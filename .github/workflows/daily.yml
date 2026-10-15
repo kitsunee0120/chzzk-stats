@@ -26,8 +26,6 @@ jobs:
         run: python3 scripts/aggregate.py
       - name: 주간 보고서 (월요일)
         if: ${{ inputs.report || github.event_name == 'schedule' }}
-        env:
-          MY_CHANNEL_ID: ${{ vars.MY_CHANNEL_ID }}
         run: |
           if [ "${{ inputs.report }}" = "true" ] || [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then python3 scripts/report.py; fi
       - name: 저장

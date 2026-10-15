@@ -6,10 +6,10 @@
 |---|---|
 | `raw/<날짜>/<HHMM>.json.gz` | 10분마다 받은 목록 그대로(최근 3일만 보관) |
 | `daily/<날짜>.json.gz` | 하루 요약: 시각별 합계, 분류별, 채널별 시청자 흐름·제목·태그 |
-| `reports/<시작일>-주간.md` | 매주 월요일 주간 보고서: 시간대, 콘텐츠 비중, 급성장 채널, 제목 키워드, 내 채널 |
+| `reports/<시작일>-주간.md` | 매주 월요일 주간 보고서: 시간대, 콘텐츠 비중, 급성장 채널, 제목 키워드 |
 
 - 시각은 모두 한국 시간. 시청자 수는 10분 간격 표본입니다.
 - 설정: Settings → Secrets and variables → Actions
   - Secrets: `CHZZK_CLIENT_ID`, `CHZZK_CLIENT_SECRET`
-  - Variables(선택): `MY_CHANNEL_ID` (내 채널 순위 표시)
 - 주간 보고서를 지금 만들려면 Actions → daily → Run workflow → "주간 보고서도 지금 만들기".
+- 공개 자료는 시장 전체 숫자뿐입니다. 각자 채널 순위·흐름은 메이리 작업실이 `daily` 파일을 받아 자기 PC에서 계산합니다.
