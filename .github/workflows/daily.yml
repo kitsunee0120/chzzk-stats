@@ -32,7 +32,8 @@ jobs:
         run: |
           git config user.name 'meiri-stats'
           git config user.email 'meiri-stats@users.noreply.github.com'
-          git add -A daily raw reports
+          # 아직 없는 폴더(예: 첫 주간 보고서 전 reports)를 지정하면 git add가 실패하므로 있는 것만
+          for d in daily raw reports; do [ -e "$d" ] && git add -A "$d"; done; true
           git diff --cached --quiet || git commit -q -m "하루 요약 $(TZ=Asia/Seoul date '+%Y-%m-%d')"
           if [ "$(TZ=Asia/Seoul date +%u)" = "1" ]; then
             # 지운 raw가 기록에 계속 쌓이지 않게 주 1회 기록을 한 커밋으로 줄인다(파일 내용은 그대로)
