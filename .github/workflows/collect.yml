@@ -23,11 +23,17 @@ jobs:
           CHZZK_CLIENT_ID: ${{ secrets.CHZZK_CLIENT_ID }}
           CHZZK_CLIENT_SECRET: ${{ secrets.CHZZK_CLIENT_SECRET }}
         run: python3 scripts/collect.py
+      - name: 숲 수집
+        continue-on-error: true
+        env:
+          SOOP_CLIENT_ID: ${{ secrets.SOOP_CLIENT_ID }}
+        run: python3 scripts/collect_soop.py
       - name: 저장
         run: |
           git config user.name 'meiri-stats'
           git config user.email 'meiri-stats@users.noreply.github.com'
           git add raw
+          [ -e raw-soop ] && git add raw-soop
           git diff --cached --quiet && exit 0
           git commit -q -m "수집 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
           for i in 1 2 3; do git push -q && exit 0; git pull -q --rebase || true; sleep 5; done

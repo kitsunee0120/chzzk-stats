@@ -1,4 +1,5 @@
 """하루치 10분 기록(raw/<날짜>/*.json.gz)을 하루 요약 daily/<날짜>.json.gz 로 묶는다.
+숲은 raw-soop → daily-soop (같은 형식, 2026-10-17).
 
 사용: python aggregate.py [YYYY-MM-DD ...]   (생략하면 요약이 없는 지난 날짜 전부 + 어제)
 요약을 만든 뒤 KEEP_RAW_DAYS(기본 3일)보다 오래된 raw 폴더는 지운다(요약이 있는 날만).
@@ -22,8 +23,11 @@ STEP_MIN = 10
 KEEP_RAW_DAYS = int(os.environ.get('KEEP_RAW_DAYS', '3'))
 
 
-def build(date):
-    files = sorted(glob.glob(os.path.join(ROOT, 'raw', date, '*.json.gz')))
+PLATFORMS = (('raw', 'daily'), ('raw-soop', 'daily-soop'))    # 치지직 / 숲 (2026-10-17)
+
+
+def build(date, raw='raw'):
+    files = sorted(glob.glob(os.path.join(ROOT, raw, date, '*.json.gz')))
     if not files:
         return None
     snaps, partial, totals, cats, chans = [], [], {}, {}, {}
@@ -77,27 +81,28 @@ def kst_date(days_ago=0):
 
 def main(argv):
     today = kst_date()
-    if argv:
-        dates = argv
-    else:
-        have = {os.path.basename(p) for p in glob.glob(os.path.join(ROOT, 'raw', '*'))}
-        dates = sorted(d for d in have if d < today and not os.path.exists(os.path.join(ROOT, 'daily', d + '.json.gz')))
-        y = kst_date(1)
-        if y in have and y not in dates:
-            dates.append(y)
-    for d in dates:
-        out = build(d)
-        if out is None:
-            print('%s: raw 없음' % d)
-            continue
-        write_gz_json(os.path.join(ROOT, 'daily', d + '.json.gz'), out)
-        print('%s: 기록 %d회 · 채널 %d · 분류 %d' % (d, len(out['snapshots']), len(out['channels']), len(out['categories'])))
-    cutoff = kst_date(KEEP_RAW_DAYS)
-    for p in glob.glob(os.path.join(ROOT, 'raw', '*')):
-        d = os.path.basename(p)
-        if d < cutoff and os.path.exists(os.path.join(ROOT, 'daily', d + '.json.gz')):
-            shutil.rmtree(p)
-            print('raw 정리: %s' % d)
+    for raw, daily in PLATFORMS:
+        if argv:
+            dates = argv
+        else:
+            have = {os.path.basename(p) for p in glob.glob(os.path.join(ROOT, raw, '*'))}
+            dates = sorted(d for d in have if d < today and not os.path.exists(os.path.join(ROOT, daily, d + '.json.gz')))
+            y = kst_date(1)
+            if y in have and y not in dates:
+                dates.append(y)
+        for d in dates:
+            out = build(d, raw)
+            if out is None:
+                print('%s %s: raw 없음' % (raw, d))
+                continue
+            write_gz_json(os.path.join(ROOT, daily, d + '.json.gz'), out)
+            print('%s %s: 기록 %d회 · 채널 %d · 분류 %d' % (daily, d, len(out['snapshots']), len(out['channels']), len(out['categories'])))
+        cutoff = kst_date(KEEP_RAW_DAYS)
+        for p in glob.glob(os.path.join(ROOT, raw, '*')):
+            d = os.path.basename(p)
+            if d < cutoff and os.path.exists(os.path.join(ROOT, daily, d + '.json.gz')):
+                shutil.rmtree(p)
+                print('%s 정리: %s' % (raw, d))
     return 0
 
 
