@@ -1,0 +1,41 @@
+name: collect
+# 10분마다 치지직 라이브 목록 수집
+# 정각·10분 단위는 GitHub 전체가 몰려서 일정이 자주 빠지거나 크게 늦음 → 어긋난 분(…7분)에 돌림
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: data
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: 수집
+        env:
+          CHZZK_CLIENT_ID: ${{ secrets.CHZZK_CLIENT_ID }}
+          CHZZK_CLIENT_SECRET: ${{ secrets.CHZZK_CLIENT_SECRET }}
+        run: python3 scripts/collect.py
+      - name: 숲 수집
+        continue-on-error: true
+        env:
+          SOOP_CLIENT_ID: ${{ secrets.SOOP_CLIENT_ID }}
+        run: python3 scripts/collect_soop.py
+      - name: 저장
+        run: |
+          git config user.name 'meiri-stats'
+          git config user.email 'meiri-stats@users.noreply.github.com'
+          git add raw
+          [ -e raw-soop ] && git add raw-soop
+          git diff --cached --quiet && exit 0
+          git commit -q -m "수집 $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do git push -q && exit 0; git pull -q --rebase || true; sleep 5; done
+          exit 1
+
